@@ -3,7 +3,7 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
-from cli.commands import apply, scan, setup, tracker
+from cli.commands import apply, batch, scan, setup, tracker
 
 app = typer.Typer(
     help=(
@@ -12,6 +12,7 @@ app = typer.Typer(
         "  openapply setup\n"
         "  openapply apply <url-or-jd-text>\n"
         "  openapply scan [--auto]\n"
+        "  openapply batch [--min-score B] [--limit 20]\n"
         "  openapply tracker\n"
         "  openapply --help\n"
     ),
@@ -91,6 +92,22 @@ def scan_command(
     auto: bool = typer.Option(False, "--auto", help="Evaluate discovered jobs and queue B+ matches."),
 ) -> None:
     scan.command(auto=auto)
+
+
+@app.command(
+    "batch",
+    help=(
+        "Process pipeline queue in parallel.\n\n"
+        "Examples:\n"
+        "  openapply batch\n"
+        "  openapply batch --min-score B --limit 20"
+    ),
+)
+def batch_command(
+    min_score: str = typer.Option("B", "--min-score", help="Minimum grade to generate CV."),
+    limit: int = typer.Option(20, "--limit", min=1, help="Max pending URLs to process."),
+) -> None:
+    batch.command(min_score=min_score, limit=limit)
 
 
 if __name__ == "__main__":
