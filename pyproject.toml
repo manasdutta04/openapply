@@ -24,4 +24,4 @@ dependencies = [
 ]
 
 [project.scripts]
-openapply = "open_apply.cli.main:app"
+openapply = "cli.main:app"
