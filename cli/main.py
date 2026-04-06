@@ -3,7 +3,7 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
-from cli.commands import apply, batch, scan, setup, tracker
+from cli.commands import apply, batch, learn, scan, setup, tracker
 
 app = typer.Typer(
     help=(
@@ -13,6 +13,7 @@ app = typer.Typer(
         "  openapply apply <url-or-jd-text>\n"
         "  openapply scan [--auto]\n"
         "  openapply batch [--min-score B] [--limit 20]\n"
+        "  openapply learn <job-id> <outcome>\n"
         "  openapply tracker\n"
         "  openapply --help\n"
     ),
@@ -108,6 +109,23 @@ def batch_command(
     limit: int = typer.Option(20, "--limit", min=1, help="Max pending URLs to process."),
 ) -> None:
     batch.command(min_score=min_score, limit=limit)
+
+
+@app.command(
+    "learn",
+    help=(
+        "Log outcome and update scoring weights.\n\n"
+        "Examples:\n"
+        "  openapply learn 42 interview\n"
+        "  openapply learn 42 rejected --notes \"Lost to stronger domain fit\""
+    ),
+)
+def learn_command(
+    job_id: int = typer.Argument(..., help="Job ID."),
+    outcome: str = typer.Argument(..., help="interview|rejected|offer|ghosted"),
+    notes: str = typer.Option("", "--notes", help="Optional outcome note."),
+) -> None:
+    learn.command(job_id=job_id, outcome=outcome, notes=notes)
 
 
 if __name__ == "__main__":
