@@ -3,6 +3,7 @@
 from .cv_builder import CVBuildResult, CVBuilder
 from .evaluator import EvaluationResult, JobEvaluator
 from .ollama_client import OllamaClient, OllamaClientError
+from .scraper import JobScraper, ScraperError
 
 __all__ = [
 	"OllamaClient",
@@ -11,4 +12,6 @@ __all__ = [
 	"CVBuildResult",
 	"EvaluationResult",
 	"JobEvaluator",
+	"JobScraper",
+	"ScraperError",
 ]
