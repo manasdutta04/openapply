@@ -4,6 +4,7 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
@@ -180,9 +181,14 @@ class JobEvaluator:
 
     def _load_prompt_template(self) -> str:
         prompt_file = self._project_root / self._prompt_path
-        if not prompt_file.exists():
-            raise FileNotFoundError(f"Missing prompt file: {prompt_file}")
-        return prompt_file.read_text(encoding="utf-8")
+        if prompt_file.exists():
+            return prompt_file.read_text(encoding="utf-8")
+
+        bundled_prompt = files("agent").joinpath(f"prompts/{self._prompt_path.name}")
+        if bundled_prompt.is_file():
+            return bundled_prompt.read_text(encoding="utf-8")
+
+        raise FileNotFoundError(f"Missing prompt file: {prompt_file}")
 
     def _load_cv_content(self) -> str:
         cv_file = self._project_root / self._cv_path

@@ -1,0 +1,54 @@
+# Open Apply Configuration
+# Copy to config.yml and fill in your details
+
+profile:
+  name: "Your Name"
+  email: "you@example.com"
+  phone: ""
+  location: "City, Country"
+  linkedin: ""
+  github: ""
+  website: ""
+
+targets:
+  roles:
+    - "Software Engineer"
+    - "AI Engineer"
+  salary_min: 0
+  salary_max: 0
+  currency: "USD"
+  remote_only: false
+  locations: []
+
+ollama:
+  base_url: "http://localhost:11434"
+  evaluate_model: "llama3.1:8b"    # fast model for scoring
+  generate_model: "qwen2.5:14b"    # better model for CV generation
+  stream: true
+
+scoring:
+  min_grade_to_apply: "B"          # auto-skip below this
+  min_grade_to_warn: "C"           # warn before applying below this
+  weights:                           # must sum to 1.0
+    role_match: 0.20
+    skills_alignment: 0.20
+    seniority_fit: 0.12
+    compensation: 0.12
+    geographic: 0.08
+    company_stage: 0.08
+    product_market_fit: 0.08
+    growth_trajectory: 0.07
+    interview_likelihood: 0.03
+    timeline: 0.02
+
+cv:
+  default_archetype: "Software Engineer"
+  page_format: "A4"               # A4 or Letter
+  language: "en"
+
+batch:
+  concurrency: 3
+  retry_failed: 2
+
+portals:
+  scan_interval_hours: 24

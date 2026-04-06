@@ -5,6 +5,7 @@ import difflib
 import json
 import re
 from datetime import datetime, timezone
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
@@ -152,10 +153,15 @@ async def _generate_cover_letter(
     company: str | None,
 ) -> Path:
     prompt_path = project_root / "agent" / "prompts" / "cover_letter.md"
-    if not prompt_path.exists():
-        raise FileNotFoundError(f"Missing prompt file: {prompt_path}")
+    if prompt_path.exists():
+        prompt_template = prompt_path.read_text(encoding="utf-8")
+    else:
+        bundled_prompt = files("agent").joinpath("prompts/cover_letter.md")
+        if not bundled_prompt.is_file():
+            raise FileNotFoundError(f"Missing prompt file: {prompt_path}")
+        prompt_template = bundled_prompt.read_text(encoding="utf-8")
 
-    prompt = prompt_path.read_text(encoding="utf-8").format(
+    prompt = prompt_template.format(
         profile_json=json.dumps(profile, ensure_ascii=True, indent=2),
         cv_content=cv_content,
         jd_content=jd_content,

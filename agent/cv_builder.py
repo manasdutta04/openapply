@@ -5,11 +5,12 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
 import yaml
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, select_autoescape
 from sqlalchemy.orm import Session, sessionmaker
 
 from memory.db import CV, Evaluation, Job
@@ -194,8 +195,13 @@ class CVBuilder:
         archetypes: list[str],
     ) -> dict[str, Any]:
         prompt_file = self._project_root / self._prompt_path
-        if not prompt_file.exists():
-            raise FileNotFoundError(f"Missing prompt file: {prompt_file}")
+        if prompt_file.exists():
+            prompt_template = prompt_file.read_text(encoding="utf-8")
+        else:
+            bundled_prompt = files("agent").joinpath(f"prompts/{self._prompt_path.name}")
+            if not bundled_prompt.is_file():
+                raise FileNotFoundError(f"Missing prompt file: {prompt_file}")
+            prompt_template = bundled_prompt.read_text(encoding="utf-8")
 
         evaluation_payload = {
             "score_total": evaluation.score_total,
@@ -213,7 +219,7 @@ class CVBuilder:
             "notes": evaluation.notes,
         }
 
-        prompt = prompt_file.read_text(encoding="utf-8").format(
+        prompt = prompt_template.format(
             cv_content=base_cv_markdown,
             jd_content=jd_content,
             evaluation_json=json.dumps(evaluation_payload, ensure_ascii=True, indent=2),
@@ -386,16 +392,19 @@ class CVBuilder:
 
     def _render_html(self, cv: ParsedCV, page_format: str, language: str, archetype: str) -> str:
         template_full_path = self._project_root / self._template_path
-        if not template_full_path.exists():
-            raise FileNotFoundError(f"CV template not found: {template_full_path}")
-
         env = Environment(
-            loader=FileSystemLoader(template_full_path.parent),
             autoescape=select_autoescape(["html", "xml"]),
             trim_blocks=True,
             lstrip_blocks=True,
         )
-        template = env.get_template(template_full_path.name)
+
+        if template_full_path.exists():
+            template = env.from_string(template_full_path.read_text(encoding="utf-8"))
+        else:
+            bundled_template = files("agent").joinpath(f"templates/{self._template_path.name}")
+            if not bundled_template.is_file():
+                raise FileNotFoundError(f"CV template not found: {template_full_path}")
+            template = env.from_string(bundled_template.read_text(encoding="utf-8"))
 
         return template.render(
             page_format=page_format,

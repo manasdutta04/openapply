@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
@@ -205,18 +206,25 @@ def _initialize_db(project_root: Path) -> None:
 def run_setup() -> None:
     """Interactive first-run wizard."""
     root = _workspace_root()
-    config_example = root / "config.example.yml"
     config_path = root / "config.yml"
     cv_path = root / "cv.md"
 
     console.print(Panel.fit("Open Apply Setup Wizard", border_style="cyan"))
 
-    if not config_example.exists():
-        raise typer.BadParameter("config.example.yml is missing. Cannot continue setup.")
-
     if not config_path.exists():
-        shutil.copyfile(config_example, config_path)
-        console.print("[green]Copied config.example.yml -> config.yml[/green]")
+        config_example = root / "config.example.yml"
+        if config_example.exists():
+            shutil.copyfile(config_example, config_path)
+            console.print("[green]Copied config.example.yml -> config.yml[/green]")
+        else:
+            try:
+                bundled = files("cli").joinpath("assets/config.example.yml")
+                config_path.write_text(bundled.read_text(encoding="utf-8"), encoding="utf-8")
+                console.print("[green]Created config.yml from packaged defaults.[/green]")
+            except Exception as exc:
+                raise typer.BadParameter(
+                    "No config template found. Reinstall package or create config.yml manually."
+                ) from exc
 
     config = _load_yaml(config_path)
     _setup_ollama(config)

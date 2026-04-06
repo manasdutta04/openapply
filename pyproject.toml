@@ -25,3 +25,10 @@ dependencies = [
 
 [project.scripts]
 openapply = "cli.main:app"
+
+[tool.setuptools.package-data]
+agent = ["prompts/*.md", "templates/*.html"]
+cli = ["assets/*.yml"]
+
+[tool.setuptools.packages.find]
+include = ["agent", "agent.*", "cli", "cli.*", "memory", "memory.*"]

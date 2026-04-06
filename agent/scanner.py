@@ -4,6 +4,7 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
@@ -172,8 +173,13 @@ class JobScanner:
 
     async def _generate_queries_for_portal(self, portal: Portal) -> list[str]:
         prompt_file = self._project_root / self._prompt_path
-        if not prompt_file.exists():
-            return []
+        if prompt_file.exists():
+            prompt_template = prompt_file.read_text(encoding="utf-8")
+        else:
+            bundled_prompt = files("agent").joinpath(f"prompts/{self._prompt_path.name}")
+            if not bundled_prompt.is_file():
+                return []
+            prompt_template = bundled_prompt.read_text(encoding="utf-8")
 
         with self._session_factory() as session:
             targets = self._load_targets_from_config()
@@ -184,7 +190,7 @@ class JobScanner:
             for row in recent_jobs
         ]
 
-        prompt = prompt_file.read_text(encoding="utf-8").format(
+        prompt = prompt_template.format(
             targets_json=json.dumps(targets, ensure_ascii=True, indent=2),
             history_json=json.dumps(history, ensure_ascii=True, indent=2),
             portal_json=json.dumps(
