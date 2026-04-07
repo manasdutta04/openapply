@@ -15,7 +15,7 @@ from memory.db import Job, Portal, build_session_factory, create_sqlite_engine, 
 from cli.ui import console, panel
 
 _PORTALS_FIX = (
-    "Edit portals.yml and set at least one entry to 'active: true'. "
+    "Run `openapply portal` to enable at least one portal (or edit portals.yml manually). "
     "Tip: start with a single company board to keep scans fast."
 )
 

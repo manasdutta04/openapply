@@ -21,7 +21,7 @@ from cli.ui import console, panel
 
 _PORTALS_REQUIRED_MESSAGE = (
     "[yellow]No active portals enabled in portals.yml.[/yellow]\n"
-    "Edit portals.yml and set at least one entry to [bold]active: true[/bold], then re-run:\n"
+    "Run [bold]openapply portal[/bold] to enable at least one portal (or edit portals.yml), then re-run:\n"
     "  openapply doctor\n"
     "  openapply scan\n"
 )

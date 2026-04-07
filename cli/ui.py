@@ -104,10 +104,14 @@ def gather_banner_status(project_root: Path) -> BannerStatus:
 
 def _openapply_logo() -> list[str]:
     # Keep this compact so it renders well in 80–100 cols.
+    # Use safe ASCII characters only (Windows terminal font fallback can
+    # render box-drawing glyphs incorrectly).
     return [
-        "╔═╗╔═╗╔═╗╔╗ ╦  ╦ ╦",
-        "╠═╝╠═╝╠═╣╠╩╗║  ╚╦╝",
-        "╩  ╩  ╩ ╩╚═╝╩═╝ ╩ ",
+        "  ___   ___   ___   _   _   ___   _      _   _ ",
+        " / _ \\ / _ \\ / _ \\ | | | | / _ \\ | |    | | | |",
+        "| (_) | |_) | (_) || |_| || (_) || |___ | |_| |",
+        " \\___/| .__/ \\___/  \\___/  \\___/ |_____| \\___/ ",
+        "      |_|            openapply                  ",
     ]
 
 

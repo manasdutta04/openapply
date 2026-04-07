@@ -6,7 +6,7 @@ from pathlib import Path
 
 import typer
 
-from cli.commands import apply, batch, compare, doctor, learn, outreach, pipeline, research, scan, setup, tracker
+from cli.commands import apply, batch, compare, doctor, learn, outreach, pipeline, portal, research, scan, setup, tracker
 
 app = typer.Typer(
     help=(
@@ -67,6 +67,14 @@ def setup_command() -> None:
 )
 def doctor_command() -> None:
     doctor.command()
+
+
+@app.command(
+    "portal",
+    help="Manage portals from the CLI (enable/add/disable/status).",
+)
+def portal_command() -> None:
+    portal.command()
 
 
 @app.command(
