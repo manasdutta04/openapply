@@ -74,7 +74,7 @@ async def _auto_route_b_plus(
     return evaluated, queued
 
 
-async def _run_scan(auto: bool) -> None:
+async def _run_scan(auto: bool, max_jobs_per_portal: int, max_links_per_portal: int) -> None:
     project_root = Path.cwd()
     config_path = project_root / "config.yml"
 
@@ -104,7 +104,10 @@ async def _run_scan(auto: bool) -> None:
     )
 
     console.print("[bold]Scanning active portals...[/bold]")
-    result = await scanner.scan()
+    result = await scanner.scan(
+        max_links_per_portal=max_links_per_portal,
+        max_jobs_per_portal=max_jobs_per_portal,
+    )
 
     with session_factory() as session:
         discovered_urls = {item.url for item in result.discovered}
@@ -139,6 +142,8 @@ def command(
         "--auto",
         help="Evaluate discovered jobs and add B+ matches to data/pipeline.md.",
     ),
+    limit: int = typer.Option(8, "--limit", min=1, help="Max jobs to scrape per portal."),
+    link_limit: int = typer.Option(30, "--link-limit", min=1, help="Max listing links to consider per portal."),
 ) -> None:
     """Discover jobs across active portals.
 
@@ -147,7 +152,7 @@ def command(
       openapply scan --auto
     """
     try:
-        asyncio.run(_run_scan(auto=auto))
+        asyncio.run(_run_scan(auto=auto, max_jobs_per_portal=limit, max_links_per_portal=link_limit))
     except OllamaClientError as exc:
         console.print("[red]Ollama is unavailable or misconfigured.[/red]")
         console.print(f"[dim]Details: {exc}[/dim]")

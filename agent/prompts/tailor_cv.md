@@ -28,23 +28,23 @@ Use the base CV, JD, and evaluation context to produce a high-signal tailored CV
 ## Output Format
 Return ONLY valid JSON:
 
-{
+{{
   "archetype": "...",
   "keywords": ["...", "..."],
   "summary_rewrite": "...",
   "bullet_reorders": [
-    {
+    {{
       "section": "experience|projects|skills",
       "company": "...",
       "move_to_top": ["...", "..."]
-    }
+    }}
   ],
   "keyword_injections": [
-    {
+    {{
       "location": "summary|experience:<company>|projects:<name>|skills",
       "original": "...",
       "rewritten": "..."
-    }
+    }}
   ],
   "cover_letter_angle": "2-3 sentence angle for cover letter"
-}
+}}

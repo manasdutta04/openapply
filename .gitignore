@@ -29,6 +29,7 @@ Thumbs.db
 # Open Apply user/private data
 cv.md
 config.yml
+portals.yml
 data/
 output/
 reports/

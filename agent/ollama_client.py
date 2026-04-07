@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import json
+import os
 import random
 from dataclasses import dataclass
 from pathlib import Path
@@ -78,6 +79,9 @@ class OllamaClient:
 
     async def complete_json(self, system_prompt: str, user_prompt: str) -> dict[str, Any]:
         """Generate a completion and parse it as strict JSON."""
+        if os.environ.get("OPENAPPLY_FAKE_OLLAMA", "").strip() == "1":
+            return self._fake_json_response(system_prompt=system_prompt, user_prompt=user_prompt)
+
         raw = await self.complete(system_prompt=system_prompt, user_prompt=user_prompt, stream=False)
         normalized = self._strip_json_fences(raw)
 
@@ -92,6 +96,78 @@ class OllamaClient:
             raise OllamaClientError("Expected a JSON object response.")
 
         return parsed
+
+    def _fake_json_response(self, system_prompt: str, user_prompt: str) -> dict[str, Any]:
+        profile = self._profile
+
+        if "compare" in system_prompt.lower() or "compare" in user_prompt.lower():
+            return {
+                "ranking": [{"job_id": 1, "rank": 1, "why": "Higher fit score and clearer scope."}],
+                "top_pick": {"job_id": 1, "why": "Best overall balance for targets."},
+                "notes": ["FAKE_OLLAMA enabled; replace with real Ollama for real output."],
+            }
+
+        if "outreach" in system_prompt.lower() or "outreach" in user_prompt.lower():
+            return {
+                "channel": "linkedin",
+                "subject": "",
+                "message": "Hi — I’m interested in the role. I’ve shipped similar systems end-to-end and can share relevant examples. Open to a quick 15-min chat?",
+            }
+
+        if "research" in system_prompt.lower() or "research" in user_prompt.lower():
+            return {
+                "company_stage_guess": "unknown",
+                "pmf_signal": 3.0,
+                "risk_signal": 3.0,
+                "growth_signal": 3.0,
+                "interview_signal": 3.0,
+                "highlights": ["Clear responsibilities", "Reasonable requirements"],
+                "red_flags": ["Limited public data in fake mode"],
+                "questions_to_ask_recruiter": ["What are the top success metrics for 90 days?"],
+                "verdict": "maybe",
+                "confidence": 0.4,
+            }
+
+        if profile == "evaluate":
+            return {
+                "scores": {
+                    "role_match": 4.0,
+                    "skills_alignment": 4.0,
+                    "seniority_fit": 3.5,
+                    "compensation": 3.0,
+                    "geographic": 4.0,
+                    "company_stage": 3.0,
+                    "product_market_fit": 3.5,
+                    "growth_trajectory": 3.5,
+                    "interview_likelihood": 3.5,
+                    "timeline": 3.0,
+                },
+                "total": 3.55,
+                "grade": "B",
+                "summary": "FAKE evaluation result for local end-to-end testing.",
+                "top_strengths": ["Relevant experience", "Good skills alignment", "Solid fit"],
+                "key_gaps": ["Needs deeper domain context"],
+                "recommendation": "apply",
+            }
+
+        # generate profile: cover letter / CV tailoring / misc
+        if "cover" in system_prompt.lower() or "cover" in user_prompt.lower():
+            return {
+                "subject": "Application",
+                "greeting": "Dear Hiring Team,",
+                "body": "FAKE cover letter body for local testing.",
+                "closing": "Sincerely,",
+            }
+
+        # CV tailoring JSON (used by tailor_cv prompt)
+        return {
+            "archetype": "Software Engineer",
+            "keywords": ["Python", "SQLAlchemy", "Playwright", "Ollama", "CLI"],
+            "summary_rewrite": "Backend engineer focused on Python, automation, and reliable pipelines.",
+            "bullet_reorders": [],
+            "keyword_injections": [],
+            "cover_letter_angle": "Strong match on Python automation and pipeline experience.",
+        }
 
     async def _complete_streaming(self, model: str, messages: list[dict[str, str]]) -> str:
         stream_iter = await self._request_with_retry(model=model, messages=messages, stream=True)

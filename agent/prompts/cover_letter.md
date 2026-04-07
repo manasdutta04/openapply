@@ -30,11 +30,11 @@ Draft a concise, specific cover letter using the candidate profile and job conte
 ## Output Format
 Return ONLY valid JSON:
 
-{
+{{
   "language": "en",
   "subject": "Application for <Role>",
   "greeting": "Dear Hiring Team,",
   "body": "Full cover letter text...",
   "closing": "Sincerely,\\n<Name>",
   "highlights": ["...", "...", "..."]
-}
+}}

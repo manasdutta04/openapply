@@ -27,9 +27,9 @@ Be professional, specific, and avoid fluff.
 ## Output Format
 Return ONLY valid JSON:
 
-{
+{{
   "channel": "linkedin|email",
   "subject": "string (email only, may be empty for linkedin)",
   "message": "string"
-}
+}}
 

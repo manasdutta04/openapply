@@ -13,11 +13,11 @@ You compare multiple roles for a job seeker and recommend which to prioritize.
 ## Output Format
 Return ONLY valid JSON:
 
-{
+{{
   "ranking": [
-    { "job_id": 0, "rank": 1, "why": "..." }
+    {{ "job_id": 0, "rank": 1, "why": "..." }}
   ],
-  "top_pick": { "job_id": 0, "why": "..." },
+  "top_pick": {{ "job_id": 0, "why": "..." }},
   "notes": ["...", "..."]
-}
+}}
 

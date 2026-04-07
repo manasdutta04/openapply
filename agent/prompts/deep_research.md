@@ -25,7 +25,7 @@ Analyze the company and role context from available data.
 ## Output Format
 Return ONLY valid JSON:
 
-{
+{{
   "company_stage_guess": "startup|growth|enterprise|unknown",
   "pmf_signal": 0.0,
   "risk_signal": 0.0,
@@ -36,4 +36,4 @@ Return ONLY valid JSON:
   "questions_to_ask_recruiter": ["...", "..."],
   "verdict": "apply|maybe|skip",
   "confidence": 0.0
-}
+}}

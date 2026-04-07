@@ -115,11 +115,13 @@ def tracker_command(
     grade: str | None = typer.Option(None, "--grade", help="Filter by grade (A/B/C/D/F)."),
     status: str | None = typer.Option(None, "--status", help="Filter by status."),
     sort_by: str = typer.Option("date", "--sort-by", help="Sort by score/date/company."),
+    non_interactive: bool = typer.Option(False, "--non-interactive", help="Print rows and exit (for smoke tests/CI)."),
 ) -> None:
     tracker.command(
         grade=grade,
         status=status,
         sort_by=sort_by,  # type: ignore[arg-type]
+        non_interactive=non_interactive,
     )
 
 
@@ -134,8 +136,10 @@ def tracker_command(
 )
 def scan_command(
     auto: bool = typer.Option(False, "--auto", help="Evaluate discovered jobs and queue B+ matches."),
+    limit: int = typer.Option(8, "--limit", min=1, help="Max jobs to scrape per portal."),
+    link_limit: int = typer.Option(30, "--link-limit", min=1, help="Max listing links to consider per portal."),
 ) -> None:
-    scan.command(auto=auto)
+    scan.command(auto=auto, limit=limit, link_limit=link_limit)
 
 
 @app.command(
