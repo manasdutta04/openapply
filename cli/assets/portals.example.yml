@@ -1,0 +1,22 @@
+# Copy this file to `portals.yml` and customize.
+
+tracked_companies:
+  - name: ExampleCo Greenhouse
+    type: greenhouse
+    url: https://boards.greenhouse.io/exampleco
+    active: true
+
+job_boards:
+  - name: Lever Jobs
+    type: lever
+    url: https://jobs.lever.co
+    active: true
+    query_param: q
+    search_queries:
+      - "software engineer remote"
+      - "backend engineer python"
+
+negative_keywords:
+  - "intern"
+  - "onsite-only"
+

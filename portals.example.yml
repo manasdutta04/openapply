@@ -1,0 +1,38 @@
+# OpenApply portals configuration (career-ops style)
+# Copy to `portals.yml` and customize.
+#
+# Notes:
+# - `tracked_companies` are direct company job boards/careers pages to scan.
+# - `job_boards` are aggregators where `search_queries` will be appended as `?q=...` by default
+#   (you can override per-board `query_param` if needed).
+# - If `search_queries` is empty for a portal, OpenApply will use the LLM prompt
+#   `agent/prompts/scan_query.md` to generate portal-friendly queries from your targets.
+
+tracked_companies:
+  - name: ExampleCo Greenhouse
+    type: greenhouse
+    url: https://boards.greenhouse.io/exampleco
+    active: true
+
+job_boards:
+  - name: Lever Jobs
+    type: lever
+    url: https://jobs.lever.co
+    active: true
+    query_param: q
+    search_queries:
+      - "software engineer remote"
+      - "backend engineer python"
+
+  - name: Ashby Jobs
+    type: ashby
+    url: https://jobs.ashbyhq.com
+    active: true
+    query_param: q
+    search_queries: []
+
+negative_keywords:
+  - "intern"
+  - "onsite-only"
+  - "principal"
+

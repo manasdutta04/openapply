@@ -17,100 +17,9 @@ from agent.evaluator import JobEvaluator
 from agent.ollama_client import OllamaClient, OllamaClientError
 from agent.scraper import JobScraper
 from memory.db import build_session_factory, create_sqlite_engine, initialize_database
+from cli.pipeline_queue import PipelineState, dedupe_keep_order, ensure_pipeline_file, load_pipeline, save_pipeline
 
 console = Console()
-
-
-@dataclass(slots=True)
-class PipelineState:
-    pending: list[str]
-    processed: list[str]
-
-
-def _ensure_pipeline_file(project_root: Path) -> Path:
-    path = project_root / "data" / "pipeline.md"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        return path
-
-    path.write_text(
-        "# Open Apply - Processing Queue\n\n"
-        "Add job URLs here, one per line.\n"
-        "Run: openapply batch\n\n"
-        "## Pending\n"
-        "- https://example.com/jobs/1\n"
-        "\n"
-        "## Processed\n"
-        "(auto-moved here after processing)\n",
-        encoding="utf-8",
-    )
-    return path
-
-
-def _load_pipeline(path: Path) -> PipelineState:
-    text = path.read_text(encoding="utf-8")
-    pending: list[str] = []
-    processed: list[str] = []
-
-    section: str | None = None
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.lower() == "## pending":
-            section = "pending"
-            continue
-        if stripped.lower() == "## processed":
-            section = "processed"
-            continue
-        if not stripped.startswith("- "):
-            continue
-
-        url = stripped[2:].strip()
-        if not url:
-            continue
-
-        if section == "pending":
-            pending.append(url)
-        elif section == "processed":
-            processed.append(url)
-
-    return PipelineState(pending=pending, processed=processed)
-
-
-def _save_pipeline(path: Path, state: PipelineState) -> None:
-    lines: list[str] = []
-    lines.append("# Open Apply - Processing Queue")
-    lines.append("")
-    lines.append("Add job URLs here, one per line.")
-    lines.append("Run: openapply batch")
-    lines.append("")
-    lines.append("## Pending")
-    if state.pending:
-        for url in state.pending:
-            lines.append(f"- {url}")
-    else:
-        lines.append("(empty)")
-
-    lines.append("")
-    lines.append("## Processed")
-    if state.processed:
-        for url in state.processed:
-            lines.append(f"- {url}")
-    else:
-        lines.append("(auto-moved here after processing)")
-
-    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-
-
-def _dedupe_keep_order(values: list[str]) -> list[str]:
-    seen: set[str] = set()
-    out: list[str] = []
-    for value in values:
-        if value in seen:
-            continue
-        seen.add(value)
-        out.append(value)
-    return out
-
 
 async def _run_batch(min_grade: str, limit: int | None) -> None:
     project_root = Path.cwd()
@@ -129,10 +38,10 @@ async def _run_batch(min_grade: str, limit: int | None) -> None:
         else 3
     )
 
-    pipeline_path = _ensure_pipeline_file(project_root)
-    state = _load_pipeline(pipeline_path)
+    pipeline_path = ensure_pipeline_file(project_root)
+    state = load_pipeline(pipeline_path)
 
-    pending = _dedupe_keep_order(state.pending)
+    pending = dedupe_keep_order(state.pending)
     if limit is not None:
         pending = pending[: max(0, limit)]
 
@@ -193,8 +102,8 @@ async def _run_batch(min_grade: str, limit: int | None) -> None:
 
     processed_now = [row.url for row in completed_results]
     state.pending = [url for url in state.pending if url not in set(processed_now)]
-    state.processed = _dedupe_keep_order(state.processed + processed_now)
-    _save_pipeline(pipeline_path, state)
+    state.processed = dedupe_keep_order(state.processed + processed_now)
+    save_pipeline(pipeline_path, state)
 
     summary = Table(title="Batch Results Summary")
     summary.add_column("Metric", style="cyan")

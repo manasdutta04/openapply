@@ -3,7 +3,7 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
-from cli.commands import apply, batch, learn, scan, setup, tracker
+from cli.commands import apply, batch, compare, doctor, learn, outreach, pipeline, research, scan, setup, tracker
 
 app = typer.Typer(
     help=(
@@ -40,6 +40,53 @@ def main() -> None:
 )
 def setup_command() -> None:
     setup.command()
+
+
+@app.command(
+    "doctor",
+    help="Run setup and dependency health checks.",
+)
+def doctor_command() -> None:
+    doctor.command()
+
+
+@app.command(
+    "pipeline",
+    help=(
+        "Auto pipeline: evaluate + generate report + CV PDF + cover letter.\n\n"
+        "Examples:\n"
+        "  openapply pipeline https://boards.greenhouse.io/company/jobs/123\n"
+        "  openapply pipeline \"Senior Backend Engineer ...\""
+    ),
+)
+def pipeline_command(target: str = typer.Argument(..., help="Job URL or raw JD text.")) -> None:
+    pipeline.command(target)
+
+@app.command(
+    "research",
+    help="Generate a company/role research report for a job ID.",
+)
+def research_command(job_id: int = typer.Argument(..., help="Job ID.")) -> None:
+    research.command(job_id)
+
+
+@app.command(
+    "outreach",
+    help="Draft a LinkedIn DM or email for a job ID.",
+)
+def outreach_command(
+    job_id: int = typer.Argument(..., help="Job ID."),
+    channel: str = typer.Option("linkedin", "--channel", help="linkedin|email"),
+) -> None:
+    outreach.command(job_id, channel=channel)
+
+
+@app.command(
+    "compare",
+    help="Compare 2+ jobs by ID and recommend priority.",
+)
+def compare_command(job_ids: str = typer.Argument(..., help="Comma-separated job IDs, e.g. '12,15,22'")) -> None:
+    compare.command(job_ids)
 
 
 @app.command(

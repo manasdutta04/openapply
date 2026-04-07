@@ -12,72 +12,13 @@ from sqlalchemy import desc, select
 
 from agent.evaluator import JobEvaluator
 from agent.ollama_client import OllamaClient, OllamaClientError
+from agent.portals_config import load_portals_config
 from agent.scanner import JobScanner
 from agent.scraper import JobScraper
 from memory.db import Evaluation, Job, Portal, build_session_factory, create_sqlite_engine, initialize_database
+from cli.pipeline_queue import append_pending
 
 console = Console()
-
-
-def _ensure_pipeline_file(project_root: Path) -> Path:
-    path = project_root / "data" / "pipeline.md"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        return path
-
-    path.write_text(
-        "# Open Apply - Processing Queue\n\n"
-        "Add job URLs here, one per line.\n"
-        "Run: openapply batch\n\n"
-        "## Pending\n"
-        "\n"
-        "## Processed\n"
-        "(auto-moved here after processing)\n",
-        encoding="utf-8",
-    )
-    return path
-
-
-def _append_to_pipeline(project_root: Path, urls: list[str]) -> int:
-    path = _ensure_pipeline_file(project_root)
-    text = path.read_text(encoding="utf-8")
-    existing = {line.strip()[2:].strip() for line in text.splitlines() if line.strip().startswith("- ")}
-
-    pending_marker = "## Pending"
-    processed_marker = "## Processed"
-    pending_index = text.find(pending_marker)
-    processed_index = text.find(processed_marker)
-
-    if pending_index == -1 or processed_index == -1 or processed_index <= pending_index:
-        text = (
-            "# Open Apply - Processing Queue\n\n"
-            "Add job URLs here, one per line.\n"
-            "Run: openapply batch\n\n"
-            "## Pending\n\n"
-            "## Processed\n"
-            "(auto-moved here after processing)\n"
-        )
-        pending_index = text.find(pending_marker)
-        processed_index = text.find(processed_marker)
-
-    pending_block = text[pending_index:processed_index]
-    additions: list[str] = []
-
-    for url in urls:
-        if url in existing:
-            continue
-        additions.append(f"- {url}")
-
-    if not additions:
-        return 0
-
-    if not pending_block.endswith("\n"):
-        pending_block += "\n"
-    pending_block += "\n".join(additions) + "\n"
-
-    updated = text[:pending_index] + pending_block + text[processed_index:]
-    path.write_text(updated, encoding="utf-8")
-    return len(additions)
 
 
 def _show_summary(new_jobs: list[Job]) -> None:
@@ -129,7 +70,7 @@ async def _auto_route_b_plus(
         if result.grade in {"A", "B"}:
             passed_urls.append(job.url)
 
-    queued = _append_to_pipeline(project_root, passed_urls)
+    queued = append_pending(project_root, passed_urls)
     return evaluated, queued
 
 
@@ -144,14 +85,16 @@ async def _run_scan(auto: bool) -> None:
     initialize_database(engine)
     session_factory = build_session_factory(engine)
 
-    with session_factory() as session:
-        portal_count = session.scalars(select(Portal).where(Portal.active.is_(True))).all()
-        if not portal_count:
-            console.print(
-                "[yellow]No active portals configured in DB.[/yellow] "
-                "Insert portal rows first (table: portals)."
-            )
-            return
+    portals_cfg = load_portals_config(project_root)
+    if portals_cfg is None:
+        with session_factory() as session:
+            portal_count = session.scalars(select(Portal).where(Portal.active.is_(True))).all()
+            if not portal_count:
+                console.print(
+                    "[yellow]No active portals configured.[/yellow] "
+                    "Create portals.yml (copy from portals.example.yml) or insert rows in DB table: portals."
+                )
+                return
 
     scanner = JobScanner(
         session_factory=session_factory,

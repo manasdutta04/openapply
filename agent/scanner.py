@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from importlib.resources import files
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from sqlalchemy.exc import IntegrityError
@@ -16,8 +16,11 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from memory.db import Job, Portal
 
+from .scan_history import append_scan_history_row, parse_scan_history_keys
+from .portals_config import PortalSpec, load_portals_config
 from .ollama_client import OllamaClient, OllamaClientError
 from .scraper import JobScraper, ScraperError
+from .url_utils import attach_query, normalized_role_company
 
 
 @dataclass(slots=True)
@@ -60,15 +63,16 @@ class JobScanner:
             return ScanResult(discovered=[], inserted_job_ids=[], skipped_duplicates=0)
 
         existing_urls, existing_role_company = self._load_existing_job_keys()
-        history_urls, history_role_company = self._load_scan_history_keys()
+        history = parse_scan_history_keys(self._project_root)
+        history_urls, history_role_company = history.urls, history.role_company
 
         discovered: list[DiscoveredJob] = []
         inserted_job_ids: list[int] = []
         skipped_duplicates = 0
 
         for portal in portals:
-            queries = await self._generate_queries_for_portal(portal)
-            listing_links = await self._discover_links(portal.url, queries=queries, limit=max_links_per_portal)
+            queries = await self._queries_for_portal(portal)
+            listing_links = await self._discover_links(portal, queries=queries, limit=max_links_per_portal)
 
             processed_portal_jobs = 0
             for job_url in listing_links:
@@ -77,22 +81,23 @@ class JobScanner:
 
                 if job_url in existing_urls or job_url in history_urls:
                     skipped_duplicates += 1
-                    self._append_scan_history_row(portal.name, "", "", job_url, "duplicate")
+                    append_scan_history_row(self._project_root, portal.name, "", "", job_url, "duplicate")
                     continue
 
-                # Extract candidate company/role from URL patterns (fallback)
-                company = self._extract_company_from_url(job_url) or "Unknown"
-                role = "Position" # Generic for now, will be extracted during evaluation if needed
-                
-                # For scan discovery, we don't scrape full JD - store minimal data
-                # The evaluator will scrape details when needed
-                description = f"Job posting from {portal.name}"
-                
-                normalized_key = self._normalized_role_company(company, role)
+                try:
+                    jd = await self._scraper.scrape_jd(job_url)
+                except ScraperError:
+                    append_scan_history_row(self._project_root, portal.name, "", "", job_url, "error")
+                    continue
+
+                company = str(jd.get("company", "")).strip() or self._extract_company_from_url(job_url) or "Unknown"
+                role = str(jd.get("title", "")).strip() or "Unknown"
+                description = str(jd.get("description", "")).strip()
+                normalized_key = normalized_role_company(company, role)
 
                 if normalized_key in existing_role_company or normalized_key in history_role_company:
                     skipped_duplicates += 1
-                    self._append_scan_history_row(portal.name, company, role, job_url, "duplicate")
+                    append_scan_history_row(self._project_root, portal.name, company, role, job_url, "duplicate")
                     continue
 
                 inserted_id = self._insert_job(
@@ -104,7 +109,7 @@ class JobScanner:
 
                 if inserted_id is None:
                     skipped_duplicates += 1
-                    self._append_scan_history_row(portal.name, company, role, job_url, "duplicate")
+                    append_scan_history_row(self._project_root, portal.name, company, role, job_url, "duplicate")
                     continue
 
                 discovered.append(
@@ -122,7 +127,7 @@ class JobScanner:
 
                 existing_urls.add(job_url)
                 existing_role_company.add(normalized_key)
-                self._append_scan_history_row(portal.name, company, role, job_url, "new")
+                append_scan_history_row(self._project_root, portal.name, company, role, job_url, "new")
 
         return ScanResult(
             discovered=discovered,
@@ -130,9 +135,25 @@ class JobScanner:
             skipped_duplicates=skipped_duplicates,
         )
 
-    def _load_active_portals(self) -> list[Portal]:
+    def _load_active_portals(self) -> list[PortalSpec]:
+        cfg = load_portals_config(self._project_root)
+        if cfg is not None:
+            return cfg.active_portals()
+
         with self._session_factory() as session:
-            return session.scalars(select(Portal).where(Portal.active.is_(True))).all()
+            rows = session.scalars(select(Portal).where(Portal.active.is_(True))).all()
+
+        return [
+            PortalSpec(
+                name=row.name,
+                type=row.type,
+                url=row.url,
+                active=bool(row.active),
+                query_param="q",
+                search_queries=None,
+            )
+            for row in rows
+        ]
 
     def _load_existing_job_keys(self) -> tuple[set[str], set[str]]:
         urls: set[str] = set()
@@ -142,40 +163,19 @@ class JobScanner:
             rows = session.scalars(select(Job)).all()
             for row in rows:
                 urls.add(row.url)
-                role_company.add(self._normalized_role_company(row.company or "", row.role or ""))
+                role_company.add(normalized_role_company(row.company or "", row.role or ""))
 
         return urls, role_company
 
-    def _load_scan_history_keys(self) -> tuple[set[str], set[str]]:
-        history_path = self._scan_history_path()
-        if not history_path.exists():
-            self._ensure_scan_history_file()
-            return set(), set()
+    async def _queries_for_portal(self, portal: PortalSpec) -> list[str]:
+        # portals.yml can provide curated search queries per portal.
+        # Semantics:
+        # - search_queries == None: generate via LLM prompt
+        # - search_queries == []: do not add query variants (scan only portal.url)
+        # - search_queries == [..]: use exactly those queries (plus portal.url)
+        if portal.search_queries is not None:
+            return portal.search_queries
 
-        urls: set[str] = set()
-        role_company: set[str] = set()
-
-        for line in history_path.read_text(encoding="utf-8").splitlines():
-            if not line.startswith("|"):
-                continue
-            if "| Date |" in line or "|------" in line:
-                continue
-
-            parts = [part.strip() for part in line.split("|")]
-            if len(parts) < 7:
-                continue
-
-            company = parts[3]
-            role = parts[4]
-            url = parts[5]
-
-            if url:
-                urls.add(url)
-            role_company.add(self._normalized_role_company(company, role))
-
-        return urls, role_company
-
-    async def _generate_queries_for_portal(self, portal: Portal) -> list[str]:
         prompt_file = self._project_root / self._prompt_path
         if prompt_file.exists():
             prompt_template = prompt_file.read_text(encoding="utf-8")
@@ -226,10 +226,10 @@ class JobScanner:
 
         return result[:8]
 
-    async def _discover_links(self, portal_url: str, queries: list[str], limit: int) -> list[str]:
-        targets = [portal_url]
+    async def _discover_links(self, portal: PortalSpec, queries: list[str], limit: int) -> list[str]:
+        targets = [portal.url]
         for query in queries[:4]:
-            targets.append(self._attach_query(portal_url, query))
+            targets.append(attach_query(portal.url, query_param=portal.query_param, query=query))
 
         links: list[str] = []
         seen: set[str] = set()
@@ -282,21 +282,6 @@ class JobScanner:
 
         return links
 
-    @staticmethod
-    def _attach_query(url: str, query: str) -> str:
-        parsed = urlparse(url)
-        q = parse_qs(parsed.query)
-        q["q"] = [query]
-        updated = parsed._replace(query=urlencode(q, doseq=True))
-        return urlunparse(updated)
-
-    @staticmethod
-    def _normalized_role_company(company: str, role: str) -> str:
-        def normalize(value: str) -> str:
-            return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
-
-        return f"{normalize(company)}::{normalize(role)}"
-
     def _insert_job(self, url: str, company: str, role: str, jd_text: str) -> int | None:
         with self._session_factory() as session:
             row = Job(
@@ -317,30 +302,6 @@ class JobScanner:
                 return None
             session.refresh(row)
             return row.id
-
-    def _append_scan_history_row(self, portal: str, company: str, role: str, url: str, action: str) -> None:
-        self._ensure_scan_history_file()
-        path = self._scan_history_path()
-        now = datetime.now().strftime("%Y-%m-%d %H:%M")
-        row = f"| {now} | {portal} | {company} | {role} | {url} | {action} |\n"
-        with path.open("a", encoding="utf-8") as handle:
-            handle.write(row)
-
-    def _ensure_scan_history_file(self) -> None:
-        path = self._scan_history_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if path.exists():
-            return
-
-        path.write_text(
-            "# Scan History\n\n"
-            "| Date | Portal | Company | Role | URL | Action |\n"
-            "|------|--------|---------|------|-----|--------|\n",
-            encoding="utf-8",
-        )
-
-    def _scan_history_path(self) -> Path:
-        return self._project_root / "data" / "scan-history.md"
 
     @staticmethod
     def _extract_company_from_url(url: str) -> str | None:

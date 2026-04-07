@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
   "typer>=0.12",
   "rich>=13",
+  "textual>=0.80",
   "ollama>=0.3",
   "playwright>=1.44",
   "sqlalchemy>=2.0",

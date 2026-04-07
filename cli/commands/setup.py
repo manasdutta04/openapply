@@ -208,6 +208,7 @@ def run_setup() -> None:
     root = _workspace_root()
     config_path = root / "config.yml"
     cv_path = root / "cv.md"
+    portals_path = root / "portals.yml"
 
     console.print(Panel.fit("Open Apply Setup Wizard", border_style="cyan"))
 
@@ -225,6 +226,21 @@ def run_setup() -> None:
                 raise typer.BadParameter(
                     "No config template found. Reinstall package or create config.yml manually."
                 ) from exc
+
+    if not portals_path.exists():
+        portals_example = root / "portals.example.yml"
+        if portals_example.exists():
+            # Do not overwrite a user-edited portals.yml (only bootstrap when missing).
+            shutil.copyfile(portals_example, portals_path)
+            console.print("[green]Copied portals.example.yml -> portals.yml[/green]")
+        else:
+            try:
+                bundled = files("cli").joinpath("assets/portals.example.yml")
+                portals_path.write_text(bundled.read_text(encoding="utf-8"), encoding="utf-8")
+                console.print("[green]Created portals.yml from packaged defaults.[/green]")
+            except Exception:
+                # portals.yml is optional; scanning can still work via DB portal rows.
+                pass
 
     config = _load_yaml(config_path)
     _setup_ollama(config)
