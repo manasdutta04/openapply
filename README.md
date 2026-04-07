@@ -61,6 +61,62 @@ Then:
 openapply scan
 ```
 
+## How To Test (Recommended)
+
+### 1) Developer install (this repo)
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e .
+python -m playwright install chromium
+```
+
+Run quick health checks:
+
+```bash
+openapply doctor
+```
+
+Run unit tests:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+### 2) User install (PyPI / TestPyPI)
+
+Once you publish (see “Publish To PyPI” below), verify in a clean environment:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install openapply
+openapply setup
+openapply doctor
+```
+
+### 3) End-to-end CLI smoke test
+
+- Ensure `portals.yml` exists (setup creates it if missing; customize from `portals.example.yml`).
+- Scan:
+
+```bash
+openapply scan
+```
+
+- Run auto-pipeline for a known job URL:
+
+```bash
+openapply pipeline <job-url>
+```
+
+- Open tracker TUI:
+
+```bash
+openapply tracker
+```
+
 ## Philosophy
 
 AI analyzes. You decide. HITL always.
@@ -72,9 +128,11 @@ The system can evaluate, draft, and prefill, but a human must review before appl
 
 ```bash
 openapply setup
+openapply doctor
 openapply scan
 openapply scan --auto
 openapply batch --min-score B --limit 20
+openapply pipeline <url-or-jd-text>
 openapply apply <url-or-jd-text>
 openapply tracker
 openapply learn <job-id> <outcome>

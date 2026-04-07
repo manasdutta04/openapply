@@ -114,15 +114,11 @@ def apply_command(target: str = typer.Argument(..., help="Job URL or raw JD text
 def tracker_command(
     grade: str | None = typer.Option(None, "--grade", help="Filter by grade (A/B/C/D/F)."),
     status: str | None = typer.Option(None, "--status", help="Filter by status."),
-    date_from: str | None = typer.Option(None, "--date-from", help="Start date YYYY-MM-DD."),
-    date_to: str | None = typer.Option(None, "--date-to", help="End date YYYY-MM-DD."),
     sort_by: str = typer.Option("date", "--sort-by", help="Sort by score/date/company."),
 ) -> None:
     tracker.command(
         grade=grade,
         status=status,
-        date_from=date_from,
-        date_to=date_to,
         sort_by=sort_by,  # type: ignore[arg-type]
     )
 
