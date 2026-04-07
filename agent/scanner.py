@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 import httpx
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -74,21 +75,19 @@ class JobScanner:
                 if processed_portal_jobs >= max_jobs_per_portal:
                     break
 
-                normalized_key = self._normalized_role_company("", "")
                 if job_url in existing_urls or job_url in history_urls:
                     skipped_duplicates += 1
                     self._append_scan_history_row(portal.name, "", "", job_url, "duplicate")
                     continue
 
-                try:
-                    jd = await self._scraper.scrape_jd(job_url)
-                except ScraperError:
-                    self._append_scan_history_row(portal.name, "", "", job_url, "error")
-                    continue
-
-                company = str(jd.get("company", "")).strip() or "Unknown"
-                role = str(jd.get("title", "")).strip() or "Unknown"
-                description = str(jd.get("description", "")).strip()
+                # Extract candidate company/role from URL patterns (fallback)
+                company = self._extract_company_from_url(job_url) or "Unknown"
+                role = "Position" # Generic for now, will be extracted during evaluation if needed
+                
+                # For scan discovery, we don't scrape full JD - store minimal data
+                # The evaluator will scrape details when needed
+                description = f"Job posting from {portal.name}"
+                
                 normalized_key = self._normalized_role_company(company, role)
 
                 if normalized_key in existing_role_company or normalized_key in history_role_company:
@@ -102,6 +101,11 @@ class JobScanner:
                     role=role,
                     jd_text=description,
                 )
+
+                if inserted_id is None:
+                    skipped_duplicates += 1
+                    self._append_scan_history_row(portal.name, company, role, job_url, "duplicate")
+                    continue
 
                 discovered.append(
                     DiscoveredJob(
@@ -253,6 +257,10 @@ class JobScanner:
     def _extract_links(base_url: str, html: str) -> list[str]:
         hrefs = re.findall(r'href=["\']([^"\']+)["\']', html, flags=re.IGNORECASE)
         links: list[str] = []
+        blocked_ext = (
+            ".css", ".js", ".json", ".map", ".png", ".jpg", ".jpeg", ".gif", ".svg",
+            ".ico", ".webp", ".woff", ".woff2", ".ttf", ".eot", ".pdf", ".zip",
+        )
 
         for href in hrefs:
             absolute = urljoin(base_url, href)
@@ -261,6 +269,14 @@ class JobScanner:
             if not normalized.startswith("http"):
                 continue
             lowered = normalized.lower()
+            parsed = urlparse(normalized)
+            path = parsed.path.lower()
+
+            if "/assets/" in path or path.endswith(blocked_ext):
+                continue
+            if "cdn.greenhouse.io" in parsed.netloc.lower():
+                continue
+
             if any(tag in lowered for tag in ("/job", "/jobs", "greenhouse", "lever", "ashby", "workable")):
                 links.append(normalized)
 
@@ -281,7 +297,7 @@ class JobScanner:
 
         return f"{normalize(company)}::{normalize(role)}"
 
-    def _insert_job(self, url: str, company: str, role: str, jd_text: str) -> int:
+    def _insert_job(self, url: str, company: str, role: str, jd_text: str) -> int | None:
         with self._session_factory() as session:
             row = Job(
                 url=url,
@@ -293,7 +309,12 @@ class JobScanner:
                 status="new",
             )
             session.add(row)
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                # Another scan pass or process may have inserted this URL already.
+                return None
             session.refresh(row)
             return row.id
 
@@ -320,6 +341,26 @@ class JobScanner:
 
     def _scan_history_path(self) -> Path:
         return self._project_root / "data" / "scan-history.md"
+
+    @staticmethod
+    def _extract_company_from_url(url: str) -> str | None:
+        """Extract company name from job URL domain."""
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower().replace("www.", "")
+        
+        # Extract company name from known job portal domains
+        mapping = {
+            "boards.greenhouse.io": lambda path: path.split("/")[1] if path.startswith("/") else None,
+            "jobs.lever.co": lambda path: path.split("/")[1] if path.startswith("/") else None,
+            "jobs.ashbyhq.com": lambda path: path.split("/")[1] if path.startswith("/") else None,
+        }
+        
+        if domain in mapping:
+            company = mapping[domain](parsed.path)
+            if company:
+                return company.capitalize()
+        
+        return None
 
     def _load_targets_from_config(self) -> dict[str, Any]:
         config_path = self._project_root / "config.yml"

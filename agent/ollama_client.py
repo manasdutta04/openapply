@@ -146,6 +146,12 @@ class OllamaClient:
         if isinstance(payload, str):
             return payload
 
+        # Handle ChatResponse object from Ollama SDK
+        if hasattr(payload, "message") and hasattr(payload.message, "content"):
+            content = payload.message.content
+            if isinstance(content, str):
+                return content
+
         if isinstance(payload, dict):
             message = payload.get("message")
             if isinstance(message, dict):

@@ -83,8 +83,8 @@ Hiring urgency and process speed inferred from posting/context.
 ## Output Format
 Return ONLY valid JSON:
 
-{
-  "scores": {
+{{
+  "scores": {{
     "role_match": 0.0,
     "skills_alignment": 0.0,
     "seniority_fit": 0.0,
@@ -95,11 +95,11 @@ Return ONLY valid JSON:
     "growth_trajectory": 0.0,
     "interview_likelihood": 0.0,
     "timeline": 0.0
-  },
+  }},
   "total": 0.0,
   "grade": "A|B|C|D|F",
   "summary": "2-3 sentence plain English verdict",
   "top_strengths": ["...", "...", "..."],
   "key_gaps": ["...", "..."],
   "recommendation": "apply|skip|maybe"
-}
+}}
