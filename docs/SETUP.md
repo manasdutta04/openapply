@@ -9,7 +9,17 @@ This guide walks through local installation and first-run setup.
 3. At least one Ollama model pulled
 4. Playwright browser runtime installed
 
-## 1) Clone and install
+## 1) Install
+
+### Option A: pip install (recommended)
+
+```bash
+python -m venv .venv
+.venv\\Scripts\\activate
+pip install openapply
+```
+
+### Option B: develop from source
 
 ```bash
 git clone <your-fork-or-repo-url>
@@ -52,19 +62,24 @@ The setup wizard will:
 After successful setup:
 
 ```bash
-openapply scan
+openapply doctor
+openapply scan --limit 5 --link-limit 30
 ```
 
 ## Configure Portals Before Scanning
 
-`scan` requires active rows in the `portals` table.
+`scan` requires at least one active portal in `portals.yml`.
 
-You can add them via SQLite tooling (example values):
+Setup creates `portals.yml`, but the big-company catalog is shipped **inactive by default** so you choose what to scan.
 
-- name: `Greenhouse`
-- url: `https://boards.greenhouse.io/<company>`
-- type: `greenhouse`
-- active: `1`
+1) Open `portals.yml`
+2) Set at least one entry to `active: true`
+3) Re-run:
+
+```bash
+openapply doctor
+openapply scan --limit 5 --link-limit 30
+```
 
 Supported portal types:
 
@@ -130,7 +145,7 @@ Fix:
 ### Scan finds nothing
 
 Check:
-1. `portals` table has active entries.
+1. `portals.yml` has at least one entry with `active: true`.
 2. Portal URLs are reachable.
 3. Filters/queries are not overly restrictive.
 

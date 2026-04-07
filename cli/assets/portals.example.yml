@@ -1,22 +1,60 @@
 # Copy this file to `portals.yml` and customize.
+#
+# IMPORTANT: you must set at least one portal `active: true` before `openapply scan` will run.
 
 tracked_companies:
-  - name: ExampleCo Greenhouse
+  # Enable one portal to get started:
+  - name: ExampleCo (Greenhouse)
     type: greenhouse
     url: https://boards.greenhouse.io/exampleco
-    active: true
+    active: false
 
-job_boards:
-  - name: Lever Jobs
+  # Big-company catalog (inactive by default)
+  - name: Stripe (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/stripe
+    active: false
+  - name: Airbnb (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/airbnb
+    active: false
+  - name: Coinbase (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/coinbase
+    active: false
+  - name: DoorDash (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/doordash
+    active: false
+  - name: Notion (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/notion
+    active: false
+
+  - name: OpenAI (Lever)
     type: lever
-    url: https://jobs.lever.co
-    active: true
-    query_param: q
-    search_queries:
-      - "software engineer remote"
-      - "backend engineer python"
+    url: https://jobs.lever.co/openai
+    active: false
+  - name: Anthropic (Lever)
+    type: lever
+    url: https://jobs.lever.co/anthropic
+    active: false
+  - name: Scale AI (Lever)
+    type: lever
+    url: https://jobs.lever.co/scaleai
+    active: false
+
+  - name: Vercel (Ashby)
+    type: ashby
+    url: https://jobs.ashbyhq.com/vercel
+    active: false
+  - name: Linear (Ashby)
+    type: ashby
+    url: https://jobs.ashbyhq.com/linear
+    active: false
 
 negative_keywords:
-  - "intern"
-  - "onsite-only"
+  - intern
+  - junior
+  - onsite-only
 

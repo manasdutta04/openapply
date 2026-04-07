@@ -262,6 +262,9 @@ def run_setup() -> None:
             except Exception:
                 # portals.yml is optional; scanning can still work via DB portal rows.
                 pass
+        console.print(
+            "[yellow]Next step:[/yellow] open portals.yml and set at least one portal to [bold]active: true[/bold]."
+        )
 
     config = _load_yaml(config_path)
     _setup_ollama(config)

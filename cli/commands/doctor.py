@@ -15,6 +15,10 @@ from memory.db import Job, Portal, build_session_factory, create_sqlite_engine, 
 
 console = Console()
 
+_PORTALS_FIX = (
+    "Edit portals.yml and set at least one entry to 'active: true'. "
+    "Tip: start with a single company board to keep scans fast."
+)
 
 def _check_ollama(config: dict) -> tuple[bool, str]:
     ollama_cfg = config.get("ollama", {}) if isinstance(config.get("ollama"), dict) else {}
@@ -51,8 +55,11 @@ def _check_db(project_root: Path) -> tuple[bool, str]:
 
 def _check_portals(project_root: Path) -> tuple[bool, str]:
     cfg = load_portals_config(project_root)
-    if cfg is not None and cfg.active_portals():
-        return True, f"portals.yml OK ({len(cfg.active_portals())} active)"
+    if cfg is not None:
+        active = cfg.active_portals()
+        if active:
+            return True, f"portals.yml OK ({len(active)} active)"
+        return False, f"portals.yml found but has 0 active portals. {_PORTALS_FIX}"
 
     engine = create_sqlite_engine()
     initialize_database(engine)

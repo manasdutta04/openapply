@@ -20,6 +20,12 @@ from cli.pipeline_queue import append_pending
 
 console = Console()
 
+_PORTALS_REQUIRED_MESSAGE = (
+    "[yellow]No active portals enabled in portals.yml.[/yellow]\n"
+    "Edit portals.yml and set at least one entry to [bold]active: true[/bold], then re-run:\n"
+    "  openapply doctor\n"
+    "  openapply scan\n"
+)
 
 def _show_summary(new_jobs: list[Job]) -> None:
     count = len(new_jobs)
@@ -86,7 +92,11 @@ async def _run_scan(auto: bool, max_jobs_per_portal: int, max_links_per_portal: 
     session_factory = build_session_factory(engine)
 
     portals_cfg = load_portals_config(project_root)
-    if portals_cfg is None:
+    if portals_cfg is not None:
+        if not portals_cfg.active_portals():
+            console.print(_PORTALS_REQUIRED_MESSAGE)
+            return
+    else:
         with session_factory() as session:
             portal_count = session.scalars(select(Portal).where(Portal.active.is_(True))).all()
             if not portal_count:

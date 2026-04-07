@@ -1,38 +1,113 @@
-# OpenApply portals configuration (career-ops style)
+# OpenApply portals configuration (career-ops inspired).
 # Copy to `portals.yml` and customize.
 #
+# IMPORTANT:
+# - `openapply scan` REQUIRES at least one portal with `active: true`.
+# - This file ships a big-company catalog, but everything is OFF by default so you choose.
+#
 # Notes:
-# - `tracked_companies` are direct company job boards/careers pages to scan.
-# - `job_boards` are aggregators where `search_queries` will be appended as `?q=...` by default
-#   (you can override per-board `query_param` if needed).
-# - If `search_queries` is empty for a portal, OpenApply will use the LLM prompt
-#   `agent/prompts/scan_query.md` to generate portal-friendly queries from your targets.
+# - `tracked_companies` are direct company boards/careers pages to scan.
+# - OpenApply will scrape job pages and store JDs locally in SQLite.
+#
+# Quick start:
+# 1) Pick one company board below and set `active: true`
+# 2) Run: `openapply doctor`
+# 3) Run: `openapply scan --limit 5 --link-limit 30`
 
 tracked_companies:
-  - name: ExampleCo Greenhouse
+  # --- Example: enable this first ---
+  - name: ExampleCo (Greenhouse)
     type: greenhouse
     url: https://boards.greenhouse.io/exampleco
-    active: true
+    active: false
 
-job_boards:
-  - name: Lever Jobs
+  # --- Big companies (inactive by default) ---
+  - name: Stripe (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/stripe
+    active: false
+  - name: Airbnb (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/airbnb
+    active: false
+  - name: Coinbase (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/coinbase
+    active: false
+  - name: DoorDash (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/doordash
+    active: false
+  - name: Notion (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/notion
+    active: false
+  - name: Datadog (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/datadog
+    active: false
+  - name: Figma (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/figma
+    active: false
+  - name: Robinhood (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/robinhood
+    active: false
+  - name: Dropbox (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/dropbox
+    active: false
+  - name: Lyft (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/lyft
+    active: false
+  - name: Pinterest (Greenhouse)
+    type: greenhouse
+    url: https://boards.greenhouse.io/pinterest
+    active: false
+
+  - name: OpenAI (Lever)
     type: lever
-    url: https://jobs.lever.co
-    active: true
-    query_param: q
-    search_queries:
-      - "software engineer remote"
-      - "backend engineer python"
+    url: https://jobs.lever.co/openai
+    active: false
+  - name: Anthropic (Lever)
+    type: lever
+    url: https://jobs.lever.co/anthropic
+    active: false
+  - name: Scale AI (Lever)
+    type: lever
+    url: https://jobs.lever.co/scaleai
+    active: false
+  - name: Rippling (Lever)
+    type: lever
+    url: https://jobs.lever.co/rippling
+    active: false
+  - name: Plaid (Lever)
+    type: lever
+    url: https://jobs.lever.co/plaid
+    active: false
 
-  - name: Ashby Jobs
+  - name: Vercel (Ashby)
     type: ashby
-    url: https://jobs.ashbyhq.com
-    active: true
-    query_param: q
-    search_queries: []
+    url: https://jobs.ashbyhq.com/vercel
+    active: false
+  - name: Linear (Ashby)
+    type: ashby
+    url: https://jobs.ashbyhq.com/linear
+    active: false
+  - name: Ramp (Ashby)
+    type: ashby
+    url: https://jobs.ashbyhq.com/ramp
+    active: false
+  - name: OpenAI Research Residency (Ashby)
+    type: ashby
+    url: https://jobs.ashbyhq.com/openai
+    active: false
 
 negative_keywords:
-  - "intern"
-  - "onsite-only"
-  - "principal"
+  - intern
+  - junior
+  - onsite-only
+  - principal
 

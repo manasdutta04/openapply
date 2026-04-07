@@ -61,6 +61,17 @@ Then:
 openapply scan
 ```
 
+### Required: enable at least 1 portal
+`scan` requires at least one active portal in `portals.yml` (setup creates it for you, but everything is disabled by default).
+
+1) Open `portals.yml`  
+2) Set at least one entry to `active: true`  
+3) Run:
+
+```bash
+openapply doctor
+openapply scan --limit 5 --link-limit 30
+```
 ## How To Test (Recommended)
 
 ### 1) Developer install (this repo)
@@ -98,11 +109,11 @@ openapply doctor
 
 ### 3) End-to-end CLI smoke test
 
-- Ensure `portals.yml` exists (setup creates it if missing; customize from `portals.example.yml`).
+- Ensure `portals.yml` exists (setup creates it) and set at least one portal to `active: true`.
 - Scan:
 
 ```bash
-openapply scan
+openapply scan --limit 5 --link-limit 30
 ```
 
 - Run auto-pipeline for a known job URL:
