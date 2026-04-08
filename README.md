@@ -1,14 +1,14 @@
-# Open Apply
+# openapply
 
 > Autonomous job search agent. Runs 100% locally. Your CV never leaves your machine.
 
-Open Apply is an open-source, privacy-first, terminal-first job application assistant.
+openapply is an open-source, privacy-first, terminal-first job application assistant.
 It helps you discover roles, score fit, tailor ATS-safe CVs, and draft applications with Human In The Loop controls.
 
 ## Why
 
 career-ops showed the world this is possible.
-Open Apply makes it accessible to everyone:
+openapply makes it accessible to everyone:
 
 - No paid cloud AI subscription requirement
 - No cloud API key requirement
@@ -17,7 +17,7 @@ Open Apply makes it accessible to everyone:
 
 ## What It Does
 
-Open Apply is designed as an end-to-end local pipeline:
+openapply is designed as an end-to-end local pipeline:
 
 1. Job discovery across configured portals
 - scans active portals and discovers new listings
@@ -132,7 +132,7 @@ openapply tracker
 
 AI analyzes. You decide. HITL always.
 
-Open Apply intentionally avoids full autonomy on final submission actions.
+openapply intentionally avoids full autonomy on final submission actions.
 The system can evaluate, draft, and prefill, but a human must review before applying.
 
 ## Core Commands
@@ -151,7 +151,7 @@ openapply learn <job-id> <outcome>
 
 ## Models
 
-Open Apply uses local Ollama models. A practical starting setup:
+openapply uses local Ollama models. A practical starting setup:
 
 - `llama3.1:8b` for evaluation
 	- Pros: fast, low hardware footprint, good for scoring and routing
@@ -175,7 +175,7 @@ General guidance:
 
 ## Project Status
 
-Open Apply is in active development (`0.1.0`) and currently optimized for terminal workflows.
+openapply is in active development (`0.1.0`) and currently optimized for terminal workflows.
 Web UI support is planned as secondary priority.
 
 ## Documentation
@@ -230,7 +230,7 @@ PowerShell helper:
 ## Inspiration
 
 Inspired by the ideas popularized in career-ops (MIT), including structured fit scoring, CV templating workflow, and portal scanning patterns.
-Open Apply is implemented from scratch as a standalone Python product.
+openapply is implemented from scratch as a standalone Python product.
 
 ## License
 
