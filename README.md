@@ -175,7 +175,7 @@ General guidance:
 
 ## Project Status
 
-openapply is in active development (`0.1.0`) and currently optimized for terminal workflows.
+openapply is in active development (`0.1.1`) and currently optimized for terminal workflows.
 Web UI support is planned as secondary priority.
 
 ## Documentation
