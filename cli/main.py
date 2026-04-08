@@ -6,7 +6,7 @@ from pathlib import Path
 
 import typer
 
-from cli.commands import apply, batch, compare, doctor, learn, outreach, pipeline, portal, research, scan, setup, tracker, update
+from cli.commands import apply, batch, compare, doctor, learn, outreach, pipeline, portal, research, reset, scan, setup, tracker, update
 
 app = typer.Typer(
     help=(
@@ -83,6 +83,18 @@ def portal_command() -> None:
 )
 def update_command() -> None:
     update.command()
+
+@app.command(
+    "reset",
+    help="Reset local OpenApply workspace files (destructive).",
+)
+def reset_command(
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt."),
+    keep_cv: bool = typer.Option(False, "--keep-cv", help="Keep cv.md."),
+    keep_portals: bool = typer.Option(False, "--keep-portals", help="Keep portals.yml."),
+    keep_config: bool = typer.Option(False, "--keep-config", help="Keep config.yml."),
+) -> None:
+    reset.command(yes=yes, keep_cv=keep_cv, keep_portals=keep_portals, keep_config=keep_config)
 
 
 @app.command(

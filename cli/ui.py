@@ -165,6 +165,7 @@ def print_banner(project_root: Path, *, version: str) -> None:
             _cmd_line("openapply compare 12,15,22", "compare offers/jobs"),
             _cmd_line("openapply learn <job-id> <outcome>", "log outcomes"),
             _cmd_line("openapply update", "update openapply to latest"),
+            _cmd_line("openapply reset", "reset local workspace (destructive)"),
         ],
     )
 
