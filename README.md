@@ -180,9 +180,21 @@ Web UI support is planned as secondary priority.
 
 ## Documentation
 
-- docs/ARCHITECTURE.md
+- docs/README.md (documentation index)
 - docs/SETUP.md
+- docs/ARCHITECTURE.md
 - docs/PUBLISH.md (maintainers: publish to PyPI)
+- CONTRIBUTING.md
+- SECURITY.md
+- CODE_OF_CONDUCT.md
+
+## Community
+
+To help keep the project healthy and maintainable:
+
+- Read `CONTRIBUTING.md` before opening pull requests.
+- Review `SECURITY.md` for vulnerability reporting guidance.
+- Follow `CODE_OF_CONDUCT.md` in all project spaces.
 
 ## Publish To PyPI
 
