@@ -1,5 +1,12 @@
 # openapply
 
+
+![License MIT](https://img.shields.io/badge/license-MIT-84CC16?style=for-the-badge)
+![PyPI](https://img.shields.io/pypi/v/openapply?style=for-the-badge&label=PyPI)
+![Python](https://img.shields.io/pypi/pyversions/openapply?style=for-the-badge&label=Python)
+![Local First](https://img.shields.io/badge/local--first-privacy%20focused-0EA5E9?style=for-the-badge)
+![HITL](https://img.shields.io/badge/HITL-human%20in%20the%20loop-F59E0B?style=for-the-badge)
+
 > Autonomous job search agent. Runs 100% locally. Your CV never leaves your machine.
 
 openapply is an open-source, privacy-first, terminal-first job application assistant.
