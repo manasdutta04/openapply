@@ -87,23 +87,60 @@ function Ensure-PublishTools {
 
 Ensure-PublishTools
 
+function Get-ProjectMetadata {
+  $raw = & python -c "import pathlib, tomllib; d=tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8')); print(d['project']['name']); print(d['project']['version'])"
+  if ($LASTEXITCODE -ne 0 -or $raw.Count -lt 2) {
+    throw "Failed to read project metadata from pyproject.toml."
+  }
+
+  return @{
+    Name = $raw[0].Trim()
+    Version = $raw[1].Trim()
+  }
+}
+
+function Get-DistFilesForCurrentVersion {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$PackageName,
+    [Parameter(Mandatory = $true)]
+    [string]$Version
+  )
+
+  $prefix = "$PackageName-$Version"
+  $files = Get-ChildItem -Path "dist" -File | Where-Object {
+    $_.Name -like "$prefix*.whl" -or $_.Name -like "$prefix*.tar.gz"
+  } | Sort-Object Name
+
+  if ($files.Count -eq 0) {
+    throw "No distribution files found for $prefix in dist/. Run build first."
+  }
+
+  return $files | ForEach-Object { $_.FullName }
+}
+
+$meta = Get-ProjectMetadata
+Write-Host "Project: $($meta.Name) $($meta.Version)"
+
 if (-not $SkipBuild) {
   Write-Host "[1/3] Building distribution artifacts..."
   Invoke-Python -Args @("-m", "build") -FailureMessage "Build failed."
 }
 
+$distFiles = Get-DistFilesForCurrentVersion -PackageName $meta.Name -Version $meta.Version
+
 Write-Host "[2/3] Validating artifacts with twine..."
-Invoke-Python -Args @("-m", "twine", "check", "dist/*") -FailureMessage "Twine check failed."
+Invoke-Python -Args (@("-m", "twine", "check") + $distFiles) -FailureMessage "Twine check failed."
 
 if ($TestPyPI) {
   Write-Host "[3/3] Uploading to TestPyPI..."
-  Invoke-Python -Args @("-m", "twine", "upload", "--repository", "testpypi", "dist/*") -FailureMessage "Upload to TestPyPI failed."
+  Invoke-Python -Args (@("-m", "twine", "upload", "--repository", "testpypi") + $distFiles) -FailureMessage "Upload to TestPyPI failed."
   return
 }
 
 if ($PyPI) {
   Write-Host "[3/3] Uploading to PyPI..."
-  Invoke-Python -Args @("-m", "twine", "upload", "dist/*") -FailureMessage "Upload to PyPI failed."
+  Invoke-Python -Args (@("-m", "twine", "upload") + $distFiles) -FailureMessage "Upload to PyPI failed."
   return
 }
 
